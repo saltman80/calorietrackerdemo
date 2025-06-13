@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <?!= include('sidebarModalTheming'); ?>
+  </head>
+  <body>
+    <div class="container">
+      <form id="mealForm">
+        <div id="alertContainer"></div>
+        <div class="form-group">
+          <label for="calories">Calories<span class="required">*</span></label>
+          <input type="number" id="calories" name="calories" min="0" required />
+        </div>
+        <div class="form-group">
+          <label for="description">Description<span class="required">*</span></label>
+          <textarea id="description" name="description" rows="3" required></textarea>
+        </div>
+        <div class="form-group">
+          <label for="mealType">Meal Type<span class="required">*</span></label>
+          <select id="mealType" name="mealType" required>
+            <option value="">-- Select --</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="water">Water (oz)<span class="required">*</span></label>
+          <input type="number" id="water" name="water" min="0" step="0.1" required />
+        </div>
+        <div class="form-group">
+          <label for="weight">Weight (optional)</label>
+          <input type="number" id="weight" name="weight" min="0" step="0.1" />
+        </div>
+        <div class="button-group">
+          <button type="submit" id="saveBtn" class="btn primary">Save</button>
+          <button type="button" id="resetBtn" class="btn secondary">Reset</button>
+          <button type="button" id="statsBtn" class="btn link">View Statistics</button>
+        </div>
+        <div class="spinner" id="spinner" hidden></div>
+      </form>
+    </div>
+    <script>
+      // Populate meal type dropdown
+      function populateMealTypes() {
+        var types = ['Breakfast','Snack','Lunch','Dinner'];
+        var select = document.getElementById('mealType');
+        types.forEach(function(t) {
+          var opt = document.createElement('option');
+          opt.value = t.toLowerCase();
+          opt.textContent = t;
+          select.appendChild(opt);
+        });
+      }
+
+      function showLoading() {
+        document.getElementById('spinner').hidden = false;
+      }
+      function hideLoading() {
+        document.getElementById('spinner').hidden = true;
+      }
+      function clearAlerts() {
+        document.getElementById('alertContainer').innerHTML = '';
+      }
+      function showAlert(message, type) {
+        var container = document.getElementById('alertContainer');
+        var alertDiv = document.createElement('div');
+        alertDiv.className = type === 'error' ? 'alert alert-error' : 'alert alert-success';
+        alertDiv.textContent = message;
+        container.appendChild(alertDiv);
+      }
+
+      function collectFormData() {
+        var caloriesEl = document.getElementById('calories');
+        var descriptionEl = document.getElementById('description');
+        var mealTypeEl = document.getElementById('mealType');
+        var waterEl = document.getElementById('water');
+        var weightEl = document.getElementById('weight');
+
+        var calories = caloriesEl.value.trim();
+        var description = descriptionEl.value.trim();
+        var mealType = mealTypeEl.value;
+        var water = waterEl.value.trim();
+        var weight = weightEl.value.trim();
+
+        if (!calories) {
+          caloriesEl.focus();
+          throw new Error('Please enter calories.');
+        }
+        if (isNaN(calories) || Number(calories) < 0) {
+          caloriesEl.focus();
+          throw new Error('Calories must be a non-negative number.');
+        }
+        if (!description) {
+          descriptionEl.focus();
+          throw new Error('Please enter a description.');
+        }
+        if (!mealType) {
+          mealTypeEl.focus();
+          throw new Error('Please select a meal type.');
+        }
+        if (!water) {
+          waterEl.focus();
+          throw new Error('Please enter water amount.');
+        }
+        if (isNaN(water) || Number(water) < 0) {
+          waterEl.focus();
+          throw new Error('Water must be a non-negative number.');
+        }
+
+        var data = {
+          calories: Number(calories),
+          description: description,
+          mealType: mealType,
+          water: Number(water)
+        };
+        if (weight) {
+          if (isNaN(weight) || Number(weight) < 0) {
+            weightEl.focus();
+            throw new Error('Weight must be a non-negative number.');
+          }
+          data.weight = Number(weight);
+        }
+        return data;
+      }
+
+      function onSave(e) {
+        e.preventDefault();
+        clearAlerts();
+        showLoading();
+        var data;
+        try {
+          data = collectFormData();
+        } catch (err) {
+          hideLoading();
+          showAlert(err.message, 'error');
+          return;
+        }
+        google.script.run
+          .withFailureHandler(showErrorAlert)
+          .withSuccessHandler(onSaveSuccess)
+          .saveMealEntry(data);
+      }
+
+      function onSaveSuccess() {
+        hideLoading();
+        showAlert('Entry saved successfully.', 'success');
+        document.getElementById('mealForm').reset();
+      }
+
+      function showErrorAlert(error) {
+        hideLoading();
+        var msg = (error && error.message) ? error.message : 'An unexpected error occurred.';
+        showAlert(msg, 'error');
+      }
+
+      function onReset() {
+        document.getElementById('mealForm').reset();
+        clearAlerts();
+      }
+
+      function onViewStats() {
+        clearAlerts();
+        showLoading();
+        google.script.run
+          .withFailureHandler(showErrorAlert)
+          .withSuccessHandler(hideLoading)
+          .openStatsModal();
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+        populateMealTypes();
+        document.getElementById('mealForm').addEventListener('submit', onSave);
+        document.getElementById('resetBtn').addEventListener('click', onReset);
+        document.getElementById('statsBtn').addEventListener('click', onViewStats);
+      });
+    </script>
+  </body>
+</html>
