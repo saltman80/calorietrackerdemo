@@ -29,7 +29,9 @@ var SheetService = {
       headerRange
         .setBackground(config.theme.primaryColor)
         .setFontWeight('bold')
-        .setFontColor('#ffffff');
+        .setFontColor('#ffffff')
+        .setFontFamily('Roboto');
+      sheet.setTabColor(config.theme.primaryColor);
       // Remove existing bandings
       sheet.getBandings().forEach(function(b) { b.remove(); });
       // Apply alternating banding: header, then secondary and white
