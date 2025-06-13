@@ -133,10 +133,10 @@
           showAlert(err.message, 'error');
           return;
         }
-        google.script.run
-          .withFailureHandler(showErrorAlert)
-          .withSuccessHandler(onSaveSuccess)
-          .saveMealEntry(data);
+          google.script.run
+            .withFailureHandler(showErrorAlert)
+            .withSuccessHandler(onSaveSuccess)
+            .SheetService.saveMealEntry(data);
       }
 
       function onSaveSuccess() {

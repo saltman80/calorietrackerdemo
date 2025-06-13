@@ -119,10 +119,10 @@
       window.addEventListener('load', function() {
         google.charts.load('current', { packages: ['corechart'] });
         google.charts.setOnLoadCallback(function() {
-          google.script.run
-            .withFailureHandler(displayError)
-            .withSuccessHandler(renderCharts)
-            .sheetService.getStatsData();
+            google.script.run
+              .withFailureHandler(displayError)
+              .withSuccessHandler(renderCharts)
+              .SheetService.getStatsData();
         });
       });
 
