@@ -147,3 +147,10 @@ var SheetService = {
     return { daily: daily, weekly: weekly };
   }
 };
+function saveMealEntry(data) {
+  SheetService.saveMealEntry(data);
+}
+
+function getStatsData() {
+  return SheetService.getStatsData();
+}
