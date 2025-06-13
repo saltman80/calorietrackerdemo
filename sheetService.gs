@@ -53,9 +53,10 @@ var SheetService = {
     if (!description) {
       throw new Error('Invalid input: description is required');
     }
-    var type = String(data.type || '').toLowerCase();
-    var allowedTypes = config.ui.mealTypes || ['breakfast','snack','lunch','dinner'];
-    if (allowedTypes.indexOf(type) === -1) {
+      var type = String(data.type || '').toLowerCase();
+      var allowedTypes = (config.MEAL_TYPES || ['Breakfast','Lunch','Dinner','Snack'])
+        .map(function(t) { return String(t).toLowerCase(); });
+      if (allowedTypes.indexOf(type) === -1) {
       throw new Error('Invalid input: type must be one of ' + allowedTypes.join(', '));
     }
     var water = Number(data.water);
@@ -153,4 +154,8 @@ function saveMealEntry(data) {
 
 function getStatsData() {
   return SheetService.getStatsData();
+}
+
+function getMealTypes() {
+  return getConfig().MEAL_TYPES || [];
 }
