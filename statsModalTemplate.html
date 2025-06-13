@@ -1,0 +1,140 @@
+<!-- This file includes embedded JS/CSS due to project type rules -->
+<script>
+<html>
+  <head>
+    <base target="_top">
+    <?!= include('sidebarModalTheming'); ?>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+  </head>
+  <body>
+    <div id="alertContainer"></div>
+    <div id="spinner"><div class="loader"></div></div>
+    <div id="chartContainer" style="display:none;">
+      <div id="calorieChart" style="width:100%;height:300px;"></div>
+      <div id="waterWeightChart" style="width:100%;height:300px;"></div>
+    </div>
+    <script>
+      var calorieChart, waterWeightChart, calorieDataTable, waterWeightDataTable;
+
+      function hideLoading() {
+        var spinner = document.getElementById('spinner');
+        if (spinner) spinner.style.display = 'none';
+        var container = document.getElementById('chartContainer');
+        if (container) container.style.display = 'block';
+      }
+
+      function showAlert(message, type) {
+        var container = document.getElementById('alertContainer');
+        if (!container) return;
+        container.innerHTML =
+          '<div class="alert alert-' + type + '">' +
+            message +
+          '</div>';
+      }
+
+      function displayError(error) {
+        hideLoading();
+        var msg = (error && error.message) ? error.message : String(error);
+        showAlert('Error loading statistics: ' + msg, 'error');
+      }
+
+      function getLineOptions() {
+        return {
+          title: 'Calorie Intake Over Time',
+          curveType: 'function',
+          legend: { position: 'bottom' },
+          width: '100%',
+          height: 300
+        };
+      }
+
+      function getBarOptions() {
+        return {
+          title: 'Water (oz) and Weight Over Time',
+          legend: { position: 'bottom' },
+          width: '100%',
+          height: 300,
+          series: {
+            0: { targetAxisIndex: 0 },
+            1: { targetAxisIndex: 1 }
+          },
+          vAxes: {
+            0: { title: 'Water (oz)' },
+            1: { title: 'Weight' }
+          }
+        };
+      }
+
+      function renderCharts(data) {
+        try {
+          // Normalize incoming data: accept array or {daily, weekly}
+          var rawData;
+          if (Array.isArray(data)) {
+            rawData = data;
+          } else if (data && Array.isArray(data.daily)) {
+            rawData = data.daily.slice();
+            if (Array.isArray(data.weekly)) {
+              rawData = rawData.concat(data.weekly);
+            }
+          } else {
+            throw new Error('Invalid data format');
+          }
+
+          var calorieRows = [['Date', 'Calories']];
+          var waterWeightRows = [['Date', 'Water (oz)', 'Weight']];
+          var invalidDates = 0;
+
+          rawData.forEach(function(row) {
+            if (!row.date) return;
+            var date = new Date(row.date);
+            if (isNaN(date.getTime())) {
+              invalidDates++;
+              return;
+            }
+            var calories = (typeof row.calories === 'number') ? row.calories : null;
+            var water = (typeof row.water === 'number') ? row.water : null;
+            var weight = (typeof row.weight === 'number') ? row.weight : null;
+            calorieRows.push([date, calories]);
+            waterWeightRows.push([date, water, weight]);
+          });
+
+          calorieDataTable = google.visualization.arrayToDataTable(calorieRows, false);
+          waterWeightDataTable = google.visualization.arrayToDataTable(waterWeightRows, false);
+
+          calorieChart = new google.visualization.LineChart(document.getElementById('calorieChart'));
+          waterWeightChart = new google.visualization.ColumnChart(document.getElementById('waterWeightChart'));
+
+          hideLoading();
+          calorieChart.draw(calorieDataTable, getLineOptions());
+          waterWeightChart.draw(waterWeightDataTable, getBarOptions());
+
+          if (invalidDates > 0) {
+            showAlert(invalidDates + ' rows were skipped due to invalid dates.', 'warning');
+          }
+        } catch (e) {
+          displayError(e);
+        }
+      }
+
+      window.addEventListener('load', function() {
+        google.charts.load('current', { packages: ['corechart'] });
+        google.charts.setOnLoadCallback(function() {
+          google.script.run
+            .withFailureHandler(displayError)
+            .withSuccessHandler(renderCharts)
+            .sheetService.getStatsData();
+        });
+      });
+
+      window.addEventListener('resize', function() {
+        if (calorieChart && calorieDataTable) {
+          calorieChart.draw(calorieDataTable, getLineOptions());
+        }
+        if (waterWeightChart && waterWeightDataTable) {
+          waterWeightChart.draw(waterWeightDataTable, getBarOptions());
+        }
+      });
+    </script>
+  </body>
+</html>
+</script>
